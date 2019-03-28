@@ -240,6 +240,70 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders
             bool fromDataAnnotation = false);
 
         /// <summary>
+        ///     Sets the backing field to use for a navigation.
+        /// </summary>
+        /// <param name="fieldName"> The field name. </param>
+        /// <param name="pointsToPrincipal">
+        ///     A value indicating whether the navigation is on the dependent type pointing to the principal type.
+        /// </param>
+        /// <param name="fromDataAnnotation"> Indicates whether the configuration was specified using a data annotation. </param>
+        /// <returns>
+        ///     The same builder instance if the configuration was applied,
+        ///     <c>null</c> otherwise.
+        /// </returns>
+        IConventionRelationshipBuilder HasField(
+            [CanBeNull] string fieldName,
+            bool pointsToPrincipal,
+            bool fromDataAnnotation = false);
+
+        /// <summary>
+        ///     Sets the backing field to use for a navigation.
+        /// </summary>
+        /// <param name="fieldInfo"> The field. </param>
+        /// <param name="pointsToPrincipal">
+        ///     A value indicating whether the navigation is on the dependent type pointing to the principal type.
+        /// </param>
+        /// <param name="fromDataAnnotation"> Indicates whether the configuration was specified using a data annotation. </param>
+        /// <returns>
+        ///     The same builder instance if the configuration was applied,
+        ///     <c>null</c> otherwise.
+        /// </returns>
+        IConventionRelationshipBuilder HasField(
+            [CanBeNull] FieldInfo fieldInfo,
+            bool pointsToPrincipal,
+            bool fromDataAnnotation = false);
+
+        /// <summary>
+        ///     Returns a value indicating whether the backing field can be set for a navigation
+        ///     from the current configuration source.
+        /// </summary>
+        /// <param name="fieldName"> The field name. </param>
+        /// <param name="pointsToPrincipal">
+        ///     A value indicating whether the navigation is on the dependent type pointing to the principal type.
+        /// </param>
+        /// <param name="fromDataAnnotation"> Indicates whether the configuration was specified using a data annotation. </param>
+        /// <returns> <c>true</c> if the backing field can be set for this property. </returns>
+        bool CanSetField(
+            [CanBeNull] string fieldName,
+            bool pointsToPrincipal,
+            bool fromDataAnnotation = false);
+
+        /// <summary>
+        ///     Returns a value indicating whether the backing field can be set for a navigation
+        ///     from the current configuration source.
+        /// </summary>
+        /// <param name="fieldInfo"> The field. </param>
+        /// <param name="pointsToPrincipal">
+        ///     A value indicating whether the navigation is on the dependent type pointing to the principal type.
+        /// </param>
+        /// <param name="fromDataAnnotation"> Indicates whether the configuration was specified using a data annotation. </param>
+        /// <returns> <c>true</c> if the backing field can be set for this property. </returns>
+        bool CanSetField(
+            [CanBeNull] FieldInfo fieldInfo,
+            bool pointsToPrincipal,
+            bool fromDataAnnotation = false);
+
+        /// <summary>
         ///     Configures whether this navigation should be eager loaded by default.
         /// </summary>
         /// <param name="eagerLoaded"> A value indicating whether this navigation should be eager loaded by default. </param>
