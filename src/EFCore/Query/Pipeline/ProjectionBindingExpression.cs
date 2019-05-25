@@ -2,7 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.Expressions.Internal;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 
@@ -17,7 +19,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Pipeline
             Type = type;
         }
 
-        public ProjectionBindingExpression(Expression queryExpression, int index, Type type)
+        public ProjectionBindingExpression(Expression queryExpression, object index, Type type)
         {
             QueryExpression = queryExpression;
             Index = index;
@@ -26,7 +28,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Pipeline
 
         public Expression QueryExpression { get; }
         public ProjectionMember ProjectionMember { get; }
-        public int Index { get; }
+        public object Index { get; }
         public override Type Type { get; }
         public override ExpressionType NodeType => ExpressionType.Extension;
 
@@ -47,6 +49,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Pipeline
             && (ProjectionMember == null
                 ? projectionBindingExpression.ProjectionMember == null
                 : ProjectionMember.Equals(projectionBindingExpression.ProjectionMember))
+            // Using reference equality here since if we are this far, we don't need to compare this.
             && Index == projectionBindingExpression.Index;
 
         public override int GetHashCode()
@@ -56,7 +59,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Pipeline
                 var hashCode = base.GetHashCode();
                 hashCode = (hashCode * 397) ^ QueryExpression.GetHashCode();
                 hashCode = (hashCode * 397) ^ (ProjectionMember?.GetHashCode() ?? 0);
-                hashCode = (hashCode * 397) ^ Index.GetHashCode();
+                hashCode = (hashCode * 397) ^ (Index?.GetHashCode() ?? 0);
 
                 return hashCode;
             }
@@ -66,7 +69,28 @@ namespace Microsoft.EntityFrameworkCore.Query.Pipeline
 
         public void Print(ExpressionPrinter expressionPrinter)
         {
-            expressionPrinter.StringBuilder.Append(nameof(ProjectionBindingExpression) + ": " + ProjectionMember + "/" + Index);
+            expressionPrinter.StringBuilder.Append(nameof(ProjectionBindingExpression) + ": ");
+            if (ProjectionMember != null)
+            {
+                expressionPrinter.StringBuilder.Append(ProjectionMember);
+            }
+            else
+            {
+                if (Index is IDictionary<IProperty, int> map)
+                {
+                    using (expressionPrinter.StringBuilder.Indent())
+                    {
+                        foreach (var kvp in map)
+                        {
+                            expressionPrinter.StringBuilder.AppendLine($"{kvp.Key.Name}:{kvp.Value},");
+                        }
+                    }
+                }
+                else
+                {
+                    expressionPrinter.StringBuilder.Append(Index);
+                }
+            }
         }
     }
 }

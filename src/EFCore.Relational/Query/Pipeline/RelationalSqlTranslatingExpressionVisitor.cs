@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Extensions.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Query.Expressions.Internal;
 using Microsoft.EntityFrameworkCore.Query.NavigationExpansion;
 using Microsoft.EntityFrameworkCore.Query.Pipeline;
@@ -79,7 +80,7 @@ namespace Microsoft.EntityFrameworkCore.Relational.Query.Pipeline
             var innerExpression = Visit(memberExpression.Expression);
             if (innerExpression is EntityShaperExpression entityShaper)
             {
-                return BindProperty(entityShaper, memberExpression.Member.GetSimpleMemberName());
+                return BindProperty(entityShaper, entityShaper.EntityType.FindProperty(memberExpression.Member.GetSimpleMemberName()));
             }
 
             return TranslationFailed(memberExpression.Expression, innerExpression)
@@ -87,12 +88,50 @@ namespace Microsoft.EntityFrameworkCore.Relational.Query.Pipeline
                 : _memberTranslatorProvider.Translate((SqlExpression)innerExpression, memberExpression.Member, memberExpression.Type);
         }
 
-        private Expression BindProperty(EntityShaperExpression entityShaper, string propertyName)
+        private SqlExpression BindProperty(EntityShaperExpression entityShaper, IProperty property)
         {
-            var property = entityShaper.EntityType.FindProperty(propertyName);
-            var selectExpression = (SelectExpression)entityShaper.ValueBufferExpression.QueryExpression;
+            return ((SelectExpression)entityShaper.ValueBufferExpression.QueryExpression)
+                .BindProperty(entityShaper.ValueBufferExpression, property);
+        }
 
-            return selectExpression.BindProperty(entityShaper.ValueBufferExpression, property);
+        protected override Expression VisitTypeBinary(TypeBinaryExpression typeBinaryExpression)
+        {
+            if (typeBinaryExpression.NodeType == ExpressionType.TypeIs)
+            {
+                if (typeBinaryExpression.Expression is EntityShaperExpression entityShaperExpression)
+                {
+                    var entityType = entityShaperExpression.EntityType;
+                    if (entityType.GetAllBaseTypesInclusive().Any(et => et.ClrType == typeBinaryExpression.TypeOperand))
+                    {
+                        return _sqlExpressionFactory.Constant(true);
+                    }
+
+                    var derivedType = entityType.GetDerivedTypes().SingleOrDefault(et => et.ClrType == typeBinaryExpression.TypeOperand);
+                    if (derivedType != null)
+                    {
+                        var concreteEntityTypes = derivedType.GetConcreteTypesInHierarchy().ToList();
+                        var discriminatorColumn = BindProperty(entityShaperExpression, entityType.GetDiscriminatorProperty());
+
+                        if (concreteEntityTypes.Count == 1)
+                        {
+                            return _sqlExpressionFactory.Equal(discriminatorColumn,
+                                _sqlExpressionFactory.Constant(concreteEntityTypes[0].GetDiscriminatorValue()));
+                        }
+                        else
+                        {
+                            return _sqlExpressionFactory.In(discriminatorColumn,
+                                _sqlExpressionFactory.Constant(concreteEntityTypes.Select(et => et.GetDiscriminatorValue()).ToList()),
+                                negated: false);
+                        }
+                    }
+                    else
+                    {
+                        return _sqlExpressionFactory.Constant(false);
+                    }
+                }
+            }
+
+            return null;
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
@@ -100,23 +139,36 @@ namespace Microsoft.EntityFrameworkCore.Relational.Query.Pipeline
             if (methodCallExpression.Method.IsEFPropertyMethod())
             {
                 var firstArgument = methodCallExpression.Arguments[0];
-
-                // In certain cases EF.Property would have convert node around the source.
+                Type convertedType = null;
                 if (firstArgument is UnaryExpression unaryExpression
-                    && unaryExpression.NodeType == ExpressionType.Convert
-                    && unaryExpression.Type == typeof(object))
+                    && unaryExpression.NodeType == ExpressionType.Convert)
                 {
                     firstArgument = unaryExpression.Operand;
+                    if (unaryExpression.Type != typeof(object))
+                    {
+                        convertedType = unaryExpression.Type;
+                    }
                 }
 
                 if (firstArgument is EntityShaperExpression entityShaper)
                 {
-                    return BindProperty(entityShaper, (string)((ConstantExpression)methodCallExpression.Arguments[1]).Value);
+                    var entityType = entityShaper.EntityType;
+                    if (convertedType != null)
+                    {
+                        entityType = entityType.RootType().GetDerivedTypesInclusive()
+                            .FirstOrDefault(et => et.ClrType == convertedType);
+                    }
+
+                    if (entityType != null)
+                    {
+                        var propertyName = (string)((ConstantExpression)methodCallExpression.Arguments[1]).Value;
+                        var property = entityType.FindProperty(propertyName);
+
+                        return BindProperty(entityShaper, property);
+                    }
                 }
-                else
-                {
-                    throw new InvalidOperationException();
-                }
+
+                throw new InvalidOperationException();
             }
 
             if (methodCallExpression.Method.DeclaringType == typeof(Queryable))
@@ -288,8 +340,6 @@ namespace Microsoft.EntityFrameworkCore.Relational.Query.Pipeline
             {
                 return null;
             }
-
-
 
             var sqlOperand = (SqlExpression)operand;
 
