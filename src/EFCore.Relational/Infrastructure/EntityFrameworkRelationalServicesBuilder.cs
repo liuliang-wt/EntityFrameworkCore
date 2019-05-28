@@ -79,6 +79,7 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
                 { typeof(IRawSqlCommandBuilder), new ServiceCharacteristics(ServiceLifetime.Singleton) },
                 { typeof(IShaperCommandContextFactory), new ServiceCharacteristics(ServiceLifetime.Singleton) },
                 { typeof(ICommandBatchPreparer), new ServiceCharacteristics(ServiceLifetime.Scoped) },
+                { typeof(IRelationalInterceptors), new ServiceCharacteristics(ServiceLifetime.Scoped) },
                 { typeof(IModificationCommandBatchFactory), new ServiceCharacteristics(ServiceLifetime.Scoped) },
                 { typeof(IMigrationsModelDiffer), new ServiceCharacteristics(ServiceLifetime.Scoped) },
                 { typeof(IMigrationsSqlGenerator), new ServiceCharacteristics(ServiceLifetime.Scoped) },
@@ -177,6 +178,8 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
             TryAdd<ReLinq.IEvaluatableExpressionFilter, ReLinqRelationalEvaluatableExpressionFilter>();
             TryAdd<IEvaluatableExpressionFilter, RelationalEvaluatableExpressionFilter>();
             TryAdd<IRelationalTransactionFactory, RelationalTransactionFactory>();
+            TryAdd<IRelationalInterceptors, RelationalInterceptors>();
+            TryAdd<IInterceptors>(p => p.GetService<IRelationalInterceptors>());
 
             // New Query pipeline
             TryAdd<IQuerySqlGeneratorFactory2, QuerySqlGeneratorFactory2>();
@@ -203,6 +206,7 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
                 .AddDependencySingleton<RelationalTransactionFactoryDependencies>()
                 .AddDependencySingleton<SelectExpressionDependencies>()
                 .AddDependencySingleton<RelationalCommandBuilderDependencies>()
+                .AddDependencyScoped<RelationalInterceptorsDependencies>()
                 .AddDependencyScoped<MigrationsSqlGeneratorDependencies>()
                 .AddDependencyScoped<RelationalConventionSetBuilderDependencies>()
                 .AddDependencyScoped<ModificationCommandBatchFactoryDependencies>()

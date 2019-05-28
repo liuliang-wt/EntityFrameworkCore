@@ -40,6 +40,7 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
         private string _migrationsHistoryTableSchema;
         private Func<ExecutionStrategyDependencies, IExecutionStrategy> _executionStrategyFactory;
         private string _logFragment;
+        private IDbCommandInterceptor _commandInterceptor;
 
         /// <summary>
         ///     Creates a new set of options with everything set to default values.
@@ -66,6 +67,7 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
             _migrationsHistoryTableName = copyFrom._migrationsHistoryTableName;
             _migrationsHistoryTableSchema = copyFrom._migrationsHistoryTableSchema;
             _executionStrategyFactory = copyFrom._executionStrategyFactory;
+            _commandInterceptor = copyFrom._commandInterceptor;
         }
 
         /// <summary>
@@ -300,6 +302,27 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
             var clone = Clone();
 
             clone._executionStrategyFactory = executionStrategyFactory;
+
+            return clone;
+        }
+
+        /// <summary>
+        ///     The registered <see cref="IDbCommandInterceptor"/>, if any.
+        /// </summary>
+        public virtual IDbCommandInterceptor CommandInterceptor => _commandInterceptor;
+
+        /// <summary>
+        ///     Creates a new instance with all options the same as for this instance, but with the given option changed.
+        ///     It is unusual to call this method directly. Instead use <see cref="DbContextOptionsBuilder" />.
+        /// </summary>
+        /// <param name="commandInterceptor"> The option to change. </param>
+        /// <returns> A new instance with the option changed. </returns>
+        public virtual RelationalOptionsExtension WithCommandInterceptor(
+            [CanBeNull] IDbCommandInterceptor commandInterceptor)
+        {
+            var clone = Clone();
+
+            clone._commandInterceptor = commandInterceptor;
 
             return clone;
         }

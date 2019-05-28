@@ -520,7 +520,8 @@ namespace Microsoft.EntityFrameworkCore.Scaffolding.Internal
                         new ScopedLoggerFactory(new LoggerFactory(), dispose: true),
                         new LoggingOptions(),
                         new DiagnosticListener(""),
-                        _loggingDefinitions);
+                        _loggingDefinitions,
+                        null);
 
                     var conventionalValueGenerated = new RelationalValueGeneratorConvention(dummyLogger).GetValueGenerated(property);
                     if (conventionalValueGenerated == ValueGenerated.OnAdd)

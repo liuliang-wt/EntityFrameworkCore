@@ -208,7 +208,7 @@ namespace Microsoft.EntityFrameworkCore.Storage
             var startTime = DateTimeOffset.UtcNow;
             var stopwatch = Stopwatch.StartNew();
 
-            logger?.CommandExecuting(
+            var result = logger?.CommandExecuting(
                 dbCommand,
                 executeMethod,
                 commandId,
@@ -216,7 +216,11 @@ namespace Microsoft.EntityFrameworkCore.Storage
                 async: false,
                 startTime: startTime);
 
-            object result;
+            if (result != null)
+            {
+                return result;
+            }
+
             var readerOpen = false;
             try
             {
@@ -317,7 +321,7 @@ namespace Microsoft.EntityFrameworkCore.Storage
             var startTime = DateTimeOffset.UtcNow;
             var stopwatch = Stopwatch.StartNew();
 
-            logger?.CommandExecuting(
+            var result = logger?.CommandExecuting(
                 dbCommand,
                 executeMethod,
                 commandId,
@@ -325,7 +329,11 @@ namespace Microsoft.EntityFrameworkCore.Storage
                 async: true,
                 startTime: startTime);
 
-            object result;
+            if (result != null)
+            {
+                return result;
+            }
+
             var readerOpen = false;
             try
             {
@@ -419,7 +427,7 @@ namespace Microsoft.EntityFrameworkCore.Storage
             var command = connection.DbConnection.CreateCommand();
 
             command.CommandText = CommandText;
-            
+
             if (connection.CurrentTransaction != null)
             {
                 command.Transaction = connection.CurrentTransaction.GetDbTransaction();

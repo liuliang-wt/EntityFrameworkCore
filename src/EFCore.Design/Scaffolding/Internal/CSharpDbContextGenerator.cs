@@ -687,7 +687,8 @@ namespace Microsoft.EntityFrameworkCore.Scaffolding.Internal
                 new ScopedLoggerFactory(new LoggerFactory(), dispose: true),
                 new LoggingOptions(),
                 new DiagnosticListener(""),
-                _loggingDefinitions);
+                _loggingDefinitions,
+                null);
 
             var valueGenerated = property.ValueGenerated;
             var isRowVersion = false;

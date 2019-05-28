@@ -118,7 +118,8 @@ namespace Microsoft.EntityFrameworkCore.Internal
                             ScopedLoggerFactory.Create(scopedProvider, options),
                             scopedProvider.GetService<ILoggingOptions>(),
                             scopedProvider.GetService<DiagnosticSource>(),
-                            loggingDefinitions);
+                            loggingDefinitions,
+                            null);
 
                         if (_configurations.Count == 0)
                         {

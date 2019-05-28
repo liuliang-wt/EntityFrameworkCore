@@ -86,12 +86,14 @@ namespace Microsoft.EntityFrameworkCore
                     new LoggerFactory(),
                     new LoggingOptions(),
                     new DiagnosticListener("FakeDiagnosticListener"),
-                    new SqlServerLoggingDefinitions()),
+                    new SqlServerLoggingDefinitions(),
+                    null),
                 new DiagnosticsLogger<DbLoggerCategory.Database.Connection>(
                     new LoggerFactory(),
                     new LoggingOptions(),
                     new DiagnosticListener("FakeDiagnosticListener"),
-                    new SqlServerLoggingDefinitions()),
+                    new SqlServerLoggingDefinitions(),
+                    null),
                 new NamedConnectionStringResolver(options),
                 new RelationalTransactionFactory(new RelationalTransactionFactoryDependencies()));
         }

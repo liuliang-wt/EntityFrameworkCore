@@ -21,7 +21,8 @@ namespace Microsoft.EntityFrameworkCore.TestUtilities
                     loggerFactory,
                     new LoggingOptions(),
                     new DiagnosticListener("Fake"),
-                    new SqlServerLoggingDefinitions()));
+                    new SqlServerLoggingDefinitions(),
+                    null));
 
         protected override bool AcceptIndex(DatabaseIndex index)
             => false;

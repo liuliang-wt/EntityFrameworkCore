@@ -2271,7 +2271,8 @@ DROP TABLE PrincipalTable;");
                         Fixture.ListLoggerFactory,
                         new LoggingOptions(),
                         new DiagnosticListener("Fake"),
-                        new SqlServerLoggingDefinitions()));
+                        new SqlServerLoggingDefinitions(),
+                        null));
 
                 var databaseModel = databaseModelFactory.Create(
                     Fixture.TestStore.ConnectionString,

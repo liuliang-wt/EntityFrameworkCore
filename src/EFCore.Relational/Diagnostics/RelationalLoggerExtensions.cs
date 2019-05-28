@@ -48,7 +48,7 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
         /// <param name="connectionId"> The correlation ID associated with the <see cref="DbConnection" /> being used. </param>
         /// <param name="async"> Indicates whether or not this is an async operation. </param>
         /// <param name="startTime"> The time that execution began. </param>
-        public static void CommandExecuting(
+        public static object CommandExecuting(
             [NotNull] this IDiagnosticsLogger<DbLoggerCategory.Database.Command> diagnostics,
             [NotNull] DbCommand command,
             DbCommandMethod executeMethod,
@@ -72,21 +72,61 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
                     command.CommandText.TrimEnd());
             }
 
-            if (diagnostics.DiagnosticSource.IsEnabled(definition.EventId.Name))
+            var diagnosticSourceEnabled = diagnostics.DiagnosticSource.IsEnabled(definition.EventId.Name);
+
+            var interceptor = (diagnostics.Interceptors as IRelationalInterceptors)?.CommandInterceptor;
+
+            if (interceptor != null
+                || diagnosticSourceEnabled)
             {
-                diagnostics.DiagnosticSource.Write(
-                    definition.EventId.Name,
-                    new CommandEventData(
-                        definition,
-                        CommandExecuting,
-                        command,
-                        executeMethod,
-                        commandId,
-                        connectionId,
-                        async,
-                        ShouldLogParameterValues(diagnostics, command),
-                        startTime));
+                var eventData = new CommandEventData(
+                    definition,
+                    CommandExecuting,
+                    command,
+                    executeMethod,
+                    commandId,
+                    connectionId,
+                    async,
+                    ShouldLogParameterValues(diagnostics, command),
+                    startTime);
+
+                if (diagnosticSourceEnabled)
+                {
+                    diagnostics.DiagnosticSource.Write(
+                        definition.EventId.Name,
+                        eventData);
+                }
+
+                if (interceptor != null)
+                {
+                    if (async)
+                    {
+                        switch (executeMethod)
+                        {
+                            case DbCommandMethod.ExecuteNonQuery:
+                                return interceptor.NonQueryExecutingAsync(command, eventData);
+                            case DbCommandMethod.ExecuteScalar:
+                                return interceptor.ScalarExecutingAsync(command, eventData);
+                            case DbCommandMethod.ExecuteReader:
+                                return interceptor.ReaderExecutingAsync(command, eventData);
+                        }
+                    }
+                    else
+                    {
+                        switch (executeMethod)
+                        {
+                            case DbCommandMethod.ExecuteNonQuery:
+                                return interceptor.NonQueryExecuting(command, eventData);
+                            case DbCommandMethod.ExecuteScalar:
+                                return interceptor.ScalarExecuting(command, eventData);
+                            case DbCommandMethod.ExecuteReader:
+                                return interceptor.ReaderExecuting(command, eventData);
+                        }
+                    }
+                }
             }
+
+            return null;
         }
 
         private static string CommandExecuting(EventDefinitionBase definition, EventData payload)

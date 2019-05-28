@@ -66,7 +66,8 @@ namespace Microsoft.EntityFrameworkCore
                 new ListLoggerFactory(l => false),
                 options,
                 new DiagnosticListener("Fake"),
-                new InMemoryLoggingDefinitions());
+                new InMemoryLoggingDefinitions(),
+                null);
             return logger;
         }
     }

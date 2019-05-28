@@ -5,10 +5,16 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.SqlServer.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 
@@ -19,8 +25,73 @@ using Xunit;
 // ReSharper disable InconsistentNaming
 namespace Microsoft.EntityFrameworkCore
 {
+    public class TestInterceptor : IDbCommandInterceptor
+    {
+        public DbDataReader ReaderExecuting(DbCommand command, CommandEventData eventData)
+        {
+            return null;
+        }
+
+        public int? ScalarExecuting(DbCommand command, CommandEventData eventData)
+        {
+            return null;
+        }
+
+        public object NonQueryExecuting(DbCommand command, CommandEventData eventData)
+        {
+            return null;
+        }
+
+        public Task<DbDataReader> ReaderExecutingAsync(DbCommand command, CommandEventData eventData, CancellationToken cancellationToken = default)
+        {
+            return null;
+        }
+
+        public Task<int> ScalarExecutingAsync(DbCommand command, CommandEventData eventData, CancellationToken cancellationToken = default)
+        {
+            return null;
+        }
+
+        public Task<object> NonQueryExecutingAsync(DbCommand command, CommandEventData eventData, CancellationToken cancellationToken = default)
+        {
+            return null;
+        }
+    }
+
     public class SqlServerEndToEndTest : IClassFixture<SqlServerFixture>
     {
+        public class CalabiYauContext : DbContext
+        {
+            protected override void OnModelCreating(ModelBuilder modelBuilder)
+            {
+                modelBuilder.Entity<CalabiYau>();
+            }
+
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+            {
+                optionsBuilder
+                    .UseSqlServer(
+                        @"Server=(localdb)\mssqllocaldb;Database=Test;ConnectRetryCount=0",
+                        b => b.CommandInterceptor(new TestInterceptor()));
+
+            }
+        }
+
+        public class CalabiYau
+        {
+            public int Id { get; set; }
+        }
+
+        [Fact]
+        public void Main()
+        {
+            using (var context = new CalabiYauContext())
+            {
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+            }
+        }
+
         private const string DatabaseName = "SqlServerEndToEndTest";
 
         protected SqlServerFixture Fixture { get; }
